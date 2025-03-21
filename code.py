@@ -31,7 +31,6 @@ in4.pull = Pull.UP
 #Rythem LED
 ryth1 = DigitalInOut(board.GP5)
 ryth1.direction = Direction.OUTPUT
-ryth1.value = True
 
 false1= DigitalInOut(board.GP4)
 false1.direction = Direction.OUTPUT
@@ -170,7 +169,7 @@ while(True):
                     print("(")
                     alreadyTrackedInput[currentInput]=True
                     #adds strikes for pressing after a succes and pressing outside of acceptable zone
-                    if (not Timer3(rythem[currentInput],lastBeats[currentInput],timeRange)):
+                    if ((not success[currentInput])and(not Timer3(rythem[currentInput],lastBeats[currentInput],timeRange))):
                         strikes += 1
                         FalseLED(True,currentInput)
                         print("Strikes   __1__   :"+str(strikes))
@@ -179,10 +178,10 @@ while(True):
                         FalseLED(True,currentInput)
                         print("Strikes   __2__   :"+str(strikes))
                     else:
-                        success[currentInput] = True
                         score += 1
                         CorrectLED(True,currentInput)
                         print("Score: "+str(score))
+                    success[currentInput] = True
 
             else:   # One registered press per on/off cycle
                 if(alreadyTrackedInput[currentInput]):
