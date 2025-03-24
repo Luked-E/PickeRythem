@@ -31,6 +31,7 @@ in4.pull = Pull.UP
 #Rythem LED
 ryth1 = DigitalInOut(board.GP5)
 ryth1.direction = Direction.OUTPUT
+ryth1.value = True
 
 false1= DigitalInOut(board.GP4)
 false1.direction = Direction.OUTPUT
@@ -56,6 +57,7 @@ strikes=0
 score=0
 inGame = True
 inMenu = True
+successEnable = True
 
 #input list
 inputs=[]
@@ -95,7 +97,7 @@ def ResetInputs():
     global lastBeats
     lastBeats = [ct,ct]
     global rythem
-    rythem = [1,1]
+    rythem = [0.5,0.5]
     global alreadyTrackedInput
     alreadyTrackedInput = [False,False]
     global success
@@ -159,8 +161,8 @@ while(True):
             if Timer2(rythem[currentInput],lastBeats[currentInput]):#resets the last beat 
                 successNotReset[currentInput] = True
                 lastBeats[currentInput] = CT()
-                '''if not success[currentInput]:
-                    strikes += 1'''
+                if (not success[currentInput] and successEnable):
+                    strikes += 1
                 print("lastBeat: reset, Strikes: "+str(strikes) )
             
             led.value = input

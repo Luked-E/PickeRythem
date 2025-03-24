@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "ms-python.debugpy",
+        "ms-python.python",
+        "joedevivo.vscode-circuitpython",
+        "ms-vscode.vscode-serial-monitor",
+        "ms-python.vscode-pylance"
+    ]
+}
