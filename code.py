@@ -97,7 +97,7 @@ def ResetInputs():
     global lastBeats
     lastBeats = [ct,ct]
     global rythem
-    rythem = [0.5,0.5]
+    rythem = [1,1]
     global alreadyTrackedInput
     alreadyTrackedInput = [False,False]
     global success
@@ -123,21 +123,61 @@ def Timer3Offset(timing, lastBeat, range, offset):
     fullBeat = (((CT()-lastBeat)>=(timing-(range/2)+offset)) and ((CT()-lastBeat)<=(timing+(range/2)+offset))) or (((CT()-lastBeat)<=range/2+offset) and ((CT()-lastBeat)>=0))
     return fullBeat
 
+def SetDifficultyLight(difficulty):
+    if(difficulty==1):
+        color1.duty_cycle = 64554
+        color2.duty_cycle = 0
+        color3.duty_cycle = 64554
+    elif(difficulty==2):
+        color1.duty_cycle = 0
+        color2.duty_cycle = 64554
+        color3.duty_cycle = 64554
+    elif(difficulty==3):
+        color1.duty_cycle = 64554
+        color2.duty_cycle = 64554
+        color3.duty_cycle = 0
+
 #Extras 
-currentInput=0
 
 ResetInputs()
 #run time
 while(True):
-
+    ResetInputs()
     while(inMenu):
-        if(not in4.value):
+
+        GetInputs()
+        currentInput=0
+        for input in inputs:
+            if(input):
+                if (not alreadyTrackedInput[currentInput]):
+                    print(f"currentInput: {currentInput}")
+                    alreadyTrackedInput[currentInput] = True
+                    #change this if there are not two inputs
+                    difficulty += (-1 + (2 * currentInput))
+                    #change if adding game difficulties
+                    if(difficulty==4):
+                        difficulty = 3
+                    elif(difficulty==0):
+                        difficulty = 1
+
+                    print(f"{-1 + (2 * currentInput)}")
+
+            else:
+                alreadyTrackedInput[currentInput] = False
+
+            currentInput += 1
+        print(difficulty)
+        SetDifficultyLight(difficulty)
+        if (not in1.value):
             break
+        time.sleep(0.02)
+
     print("get ready")
     time.sleep(2)
-    print("out")
+    ResetInputs()
+    
     while(inGame):
-        if(not in1.value):
+        if(not in4.value):
             break
 
         if(Timer2(homeRythem, lastBeat)):
