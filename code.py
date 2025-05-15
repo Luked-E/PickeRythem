@@ -4,6 +4,12 @@ import pwmio
 from digitalio import DigitalInOut, Direction, Pull
 from time import monotonic as CT  #CT holds current time
 import random
+import asyncio
+'''
+version stuff
+import sys
+print(sys.version)
+'''
 
 #Debugging light
 led = DigitalInOut(board.LED)
@@ -157,14 +163,27 @@ def SetDifficultyLight(difficulty):
 #Extras 
 ResetInputs()
 
+#input debugging
+def Debug():
+    print(f"{in1.value}, {in2.value}, {in3.value}, {in4.value}")
+
+
 #run time
 while(True):
 
-    #menu setup
+    '''
+    menu setup
+    '''
     ResetInputs()
     ryth1.value = True
     print("-------------\nIn Menu\n------------\n")
+
+
+    '''
+    In Menu
+    '''
     while(True):
+        Lights(True)
         GetInputs()
         currentInput=0
         for input in inputs:
@@ -184,11 +203,15 @@ while(True):
 
             currentInput += 1
         SetDifficultyLight(difficulty)
+        # Debug()
         if (not in1.value):
             break
         time.sleep(0.02)
 
-    #game setup
+
+    '''
+    game setup
+    '''
     Lights(False)
     ResetInputs()
     time.sleep(2)
@@ -196,40 +219,69 @@ while(True):
     print("-------------\nIn Game\n------------\n")
     lastPause = CT()
     nextPause = random.randrange(rythRangeStart,rythRangeEnd)
+    '''
+
+
+
+
+    Game Round:
+
+    '''
     while(True):
+        # exit game
         if(not in4.value):
             break
         
-        #Rythem switching
+        # Rythem switching
         if(Timer2(nextPauseIn,lastPause)):
             print("----------")
+            # flash warning
             Lights(True)
             time.sleep(0.2)
             Lights(False)
+            
+            # chooses new light
             chosenLight = random.randint(0,len(inputs)-1)
-            print(chosenLight)
-            nextRythem = (2**(random.randint(-difficulty,1)))
-            print(nextRythem)
+            print(f"Chosen Light: {chosenLight}")
+
+            # chooses new rythem
+            nextRythem = rythem[chosenLight]
+            while (nextRythem == rythem[chosenLight]):
+                nextRythem = (2**(random.randint(-difficulty,1)))
+            print(f"light {chosenLight} has been changed from {rythem[chosenLight]} to {nextRythem}")
             rythem[chosenLight] = nextRythem
 
+            # presentation of new rythem
             lastPause = CT()
             tempLastBeat = CT()
             while(not Timer2(pauseDuration, lastPause)):
+
+                # last beat and rythem light while inside loop
+                if(Timer2(homeRythem, lastBeat)):
+                    lastBeat = CT()
+                if Timer3Offset(homeRythem,lastBeat,0.1,-timeRange/4):# Updating rythem light
+                    ryth1.value = True
+                else:
+                    ryth1.value = False
+                
+                # last temp beat and new rythem while inside loop
                 if(Timer2(nextRythem, tempLastBeat)):
                     tempLastBeat = CT()
                 if Timer3Offset(nextRythem,tempLastBeat,0.1,-timeRange/4):
                     CorrectLED(True,chosenLight)
                 else:
                     CorrectLED(False,chosenLight)
-                time.sleep(0.01)
+
+                time.sleep(0.001)
+
+            # Post change cleanup and reset
             nextPauseIn = random.randint(rythRangeStart,rythRangeEnd)
             lastPause = CT()
             for beats in range(0,len(inputs)):
                 lastBeats[beats] = CT()
-            lastBeat = CT()
 
 
-        #last beat and rythem light
+        # last beat and rythem light
         if(Timer2(homeRythem, lastBeat)):
             lastBeat = CT()
         if Timer3Offset(homeRythem,lastBeat,0.1,-timeRange/4):# Updating rythem light
@@ -243,7 +295,7 @@ while(True):
         currentInput=0
         for input in inputs:
 
-            #resets success
+            # resets success
             if ((successNotReset[currentInput]) and (Timer2(rythem[currentInput],lastBeats[currentInput]-(timeRange/2)))):
                 success[currentInput] = False
                 successNotReset[currentInput] = False
@@ -265,6 +317,7 @@ while(True):
                 if (not alreadyTrackedInput[currentInput]):
                     print(f"{currentInput}: (")
                     alreadyTrackedInput[currentInput]=True
+
                     #adds strikes for pressing after a succes and pressing outside of acceptable zone
                     if ((not success[currentInput])and(not Timer3(rythem[currentInput],lastBeats[currentInput],timeRange))):
                         strikes += 1
