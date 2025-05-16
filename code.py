@@ -59,12 +59,12 @@ difficulty=1
 timeRange = 0.3
 strikes=0
 score=0
-inGame = True
-inMenu = True
-strikeWithoutSuccessEnable = True
+strikeWithoutSuccessEnable = False
+endGame = False
+
 #minimum and maximum times for switching rythems
-rythRangeStart = 8
-rythRangeEnd =16
+rythRangeStart = 12
+rythRangeEnd =18
 
 #input list
 inputs=[]
@@ -78,7 +78,7 @@ homeRythem = 1
 pauseStart = CT()
 nextPauseIn = 0
 lastPause = 0
-pauseDuration = 6
+rythemPauseDuration = 6
 
 
 #Methods
@@ -100,10 +100,6 @@ def CorrectLED(state,light):
         correct1.value = state
     if (light==1):
         correct2.value = state
-
-def rythemChooser(lastRythem):
-    global difficulty
-    return (random.randint()/2^(difficulty-1))
 
 
 def FalseLED(state,light):
@@ -127,6 +123,8 @@ def ResetInputs():
     global successNotReset
     successNotReset = [True,True]
 
+def GenNextPause():
+    return random.randrange(rythRangeStart, rythRangeEnd)
 
 def Timer2(timing, lastBeat): #gives if the range of lastbeat and currentbeat is greater than the timing
     return (CT()-lastBeat)>=timing
@@ -214,30 +212,31 @@ while(True):
     '''
     Lights(False)
     ResetInputs()
-    time.sleep(2)
+
+    Lights(True)
+    time.sleep(0.5)
+    Lights(False)
 
     print("-------------\nIn Game\n------------\n")
     lastPause = CT()
-    nextPause = random.randrange(rythRangeStart,rythRangeEnd)
+    #nextPauseIn = GenNextPause()
+
+
     '''
-
-
-
-
     Game Round:
-
     '''
+    
     while(True):
         # exit game
         if(not in4.value):
             break
         
         # Rythem switching
-        if(Timer2(nextPauseIn,lastPause)):
+        if(Timer2(nextPauseIn, lastPause)):
             print("----------")
             # flash warning
             Lights(True)
-            time.sleep(0.2)
+            time.sleep(0.5)
             Lights(False)
             
             # chooses new light
@@ -248,15 +247,17 @@ while(True):
             nextRythem = rythem[chosenLight]
             while (nextRythem == rythem[chosenLight]):
                 nextRythem = (2**(random.randint(-difficulty,1)))
+                if(not in4.value):
+                    break
             print(f"light {chosenLight} has been changed from {rythem[chosenLight]} to {nextRythem}")
             rythem[chosenLight] = nextRythem
 
             # presentation of new rythem
             lastPause = CT()
             tempLastBeat = CT()
-            while(not Timer2(pauseDuration, lastPause)):
+            while(not Timer2(rythemPauseDuration, lastPause)):
 
-                # last beat and rythem light while inside loop
+                # last beat and main rythem light while inside loop
                 if(Timer2(homeRythem, lastBeat)):
                     lastBeat = CT()
                 if Timer3Offset(homeRythem,lastBeat,0.1,-timeRange/4):# Updating rythem light
@@ -271,14 +272,26 @@ while(True):
                     CorrectLED(True,chosenLight)
                 else:
                     CorrectLED(False,chosenLight)
+                
+                #
+                if(not in4.value):
+                    endGame = True
+                    break
 
                 time.sleep(0.001)
-
+            if (endGame):
+                break
             # Post change cleanup and reset
-            nextPauseIn = random.randint(rythRangeStart,rythRangeEnd)
+            nextPauseIn = GenNextPause()
             lastPause = CT()
             for beats in range(0,len(inputs)):
                 lastBeats[beats] = CT()
+            lastBeat = CT()
+
+            # exit indicator
+            Lights(True)
+            time.sleep(1)
+            Lights(False)
 
 
         # last beat and rythem light
@@ -295,7 +308,7 @@ while(True):
         currentInput=0
         for input in inputs:
 
-            # resets success
+            # resets success and strike lights
             if ((successNotReset[currentInput]) and (Timer2(rythem[currentInput],lastBeats[currentInput]-(timeRange/2)))):
                 success[currentInput] = False
                 successNotReset[currentInput] = False
@@ -342,7 +355,11 @@ while(True):
         
         if strikes >= 100:
             break
+
         time.sleep(0.001)
+
+    endGame = False
+
     Lights(True)
     time.sleep(0.2)
     Lights(False)
