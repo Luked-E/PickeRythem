@@ -78,10 +78,10 @@ homeRythem = 1
 pauseStart = CT()
 nextPauseIn = 0
 lastPause = 0
-rythemPauseDuration = 6
+rythemPauseDuration = 8
 
 
-#Methods
+#Methods                                                 /\/\/\//\/\//\/\/\/\/\/\/\/\\/\/\
 def GetInputs():
     global inputs
     inputs=[not in2.value,not in3.value]
@@ -110,12 +110,15 @@ def FalseLED(state,light):
     if (light==1):
         false2.value = state
 
-def ResetInputs():
-    ct = CT()
-    global lastBeats
-    lastBeats = [ct,ct]
+def ResetRythems():
     global rythem
-    rythem = [1,1]
+    rythem = [0.5,0.5]
+
+def ResetInputs(beatStart):
+    global lastBeat
+    lastBeat = beatStart
+    global lastBeats
+    lastBeats = [beatStart,beatStart]
     global alreadyTrackedInput
     alreadyTrackedInput = [False,False]
     global success
@@ -141,7 +144,7 @@ def Timer3Offset(timing, lastBeat, range, offset):
     '''((above -range+) and (under +range+time)) or ((above zero) 
     and (under range)) with offset making the base time shorter
     offset does not work for offsets larger than half the range'''
-    fullBeat = (((CT()-lastBeat)>=(timing-(range/2)+offset)) and ((CT()-lastBeat)<=(timing+(range/2)+offset))) or (((CT()-lastBeat)<=range/2+offset) and ((CT()-lastBeat)>=0))
+    fullBeat = ( ((CT()-lastBeat)>=(timing-(range/2)+offset)) and ((CT()-lastBeat)<=(timing+(range/2)+offset)) ) or ( ((CT()-lastBeat)<=range/2+offset) and ((CT()-lastBeat)>=0) )
     return fullBeat
 
 def SetDifficultyLight(difficulty):
@@ -157,22 +160,48 @@ def SetDifficultyLight(difficulty):
         color1.duty_cycle = 64554
         color2.duty_cycle = 64554
         color3.duty_cycle = 0
+    elif(difficulty==4):
+        color1.duty_cycle = 0
+        color2.duty_cycle = 10000
+        color3.duty_cycle = 13000
+    elif(difficulty==0):
+        color1.duty_cycle = 64554
+        color2.duty_cycle = 64554
+        color3.duty_cycle = 64554
 
+def Flash():
+    global difficulty
+    for i in range(2):
+        Lights(True)
+        SetDifficultyLight(4)
+        time.sleep(0.2)
+        Lights(False)
+        SetDifficultyLight(difficulty)
+        time.sleep(0.2)
+    time.sleep(0.2)
+
+
+
+#Flash()
+#SetDifficultyLight(4)
+#time.sleep(6)
 #Extras 
-ResetInputs()
+ResetInputs(CT())
 
 #input debugging
 def Debug():
     print(f"{in1.value}, {in2.value}, {in3.value}, {in4.value}")
 
 
-#run time
+
+
+#run time                                               /\/\/\//\/\//\/\/\/\/\/\/\/\\/\/\
 while(True):
 
     '''
     menu setup
     '''
-    ResetInputs()
+
     ryth1.value = True
     print("-------------\nIn Menu\n------------\n")
 
@@ -181,7 +210,6 @@ while(True):
     In Menu
     '''
     while(True):
-        Lights(True)
         GetInputs()
         currentInput=0
         for input in inputs:
@@ -210,16 +238,14 @@ while(True):
     '''
     game setup
     '''
-    Lights(False)
-    ResetInputs()
+    ResetInputs(0)
+    ResetRythems()
 
-    Lights(True)
-    time.sleep(0.5)
-    Lights(False)
+    Flash()
 
     print("-------------\nIn Game\n------------\n")
-    lastPause = CT()
-    #nextPauseIn = GenNextPause()
+    lastPause = 0
+    
 
 
     '''
@@ -231,13 +257,12 @@ while(True):
         if(not in4.value):
             break
         
-        # Rythem switching
+        # Rythem switching                                      /\/\/\//\/\//\/\/\/\/\/\/\/\\/\/\
         if(Timer2(nextPauseIn, lastPause)):
             print("----------")
             # flash warning
-            Lights(True)
-            time.sleep(0.5)
-            Lights(False)
+            Flash()
+            
             
             # chooses new light
             chosenLight = random.randint(0,len(inputs)-1)
@@ -254,7 +279,7 @@ while(True):
 
             # presentation of new rythem
             lastPause = CT()
-            tempLastBeat = CT()
+            ResetInputs(0)
             while(not Timer2(rythemPauseDuration, lastPause)):
 
                 # last beat and main rythem light while inside loop
@@ -262,23 +287,34 @@ while(True):
                     lastBeat = CT()
                 if Timer3Offset(homeRythem,lastBeat,0.1,-timeRange/4):# Updating rythem light
                     ryth1.value = True
+                    print("8888888888")
                 else:
                     ryth1.value = False
                 
                 # last temp beat and new rythem while inside loop
-                if(Timer2(nextRythem, tempLastBeat)):
-                    tempLastBeat = CT()
-                if Timer3Offset(nextRythem,tempLastBeat,0.1,-timeRange/4):
-                    CorrectLED(True,chosenLight)
+                if(Timer2(rythem[0], lastBeats[0])):
+                    lastBeats[0] = CT()
+                if Timer3Offset(rythem[0],lastBeats[0],0.1,-timeRange/4):
+                    CorrectLED(True, 0)
+                    print("000000000")
                 else:
-                    CorrectLED(False,chosenLight)
+                    CorrectLED(False, 0)
                 
+                if(Timer2(rythem[1], lastBeats[1])):
+                    lastBeats[1] = CT()
+                if Timer3Offset(rythem[1],lastBeats[1],0.1,-timeRange/4):
+                    CorrectLED(True, 1)
+                    print("1111111")
+                else:
+                    CorrectLED(False, 1)
                 #
-                if(not in4.value):
+                if(not in4.value): #later check
                     endGame = True
                     break
 
-                time.sleep(0.001)
+                time.sleep(0.005)
+
+            # check
             if (endGame):
                 break
             # Post change cleanup and reset
@@ -288,13 +324,13 @@ while(True):
                 lastBeats[beats] = CT()
             lastBeat = CT()
 
+            ResetInputs(0)
+
             # exit indicator
-            Lights(True)
-            time.sleep(1)
-            Lights(False)
+            Flash()
 
 
-        # last beat and rythem light
+        # last beat and rythem light                               /\/\/\//\/\//\\/\/\/\/\/\//\
         if(Timer2(homeRythem, lastBeat)):
             lastBeat = CT()
         if Timer3Offset(homeRythem,lastBeat,0.1,-timeRange/4):# Updating rythem light
@@ -303,7 +339,7 @@ while(True):
             ryth1.value = False
 
 
-        #checking inputs
+        #checking inputs                                           /\/\/\//\/\//\\/\/\/\/\/\//\
         GetInputs()
         currentInput=0
         for input in inputs:
@@ -317,7 +353,7 @@ while(True):
                 print(f"{currentInput}: success: reset")
 
             #resets the last beat 
-            if Timer2(rythem[currentInput],lastBeats[currentInput]):
+            if Timer2(rythem[currentInput], lastBeats[currentInput]):
                 successNotReset[currentInput] = True
                 lastBeats[currentInput] = CT()
                 if (not success[currentInput] and strikeWithoutSuccessEnable):
@@ -332,7 +368,7 @@ while(True):
                     alreadyTrackedInput[currentInput]=True
 
                     #adds strikes for pressing after a succes and pressing outside of acceptable zone
-                    if ((not success[currentInput])and(not Timer3(rythem[currentInput],lastBeats[currentInput],timeRange))):
+                    if ((not success[currentInput])and(not Timer3Offset(rythem[currentInput],lastBeats[currentInput],timeRange,-timeRange/4))):
                         strikes += 1
                         FalseLED(True,currentInput)
                         print(f"{currentInput}: Strikes   __1__   :{strikes}")
@@ -359,7 +395,3 @@ while(True):
         time.sleep(0.001)
 
     endGame = False
-
-    Lights(True)
-    time.sleep(0.2)
-    Lights(False)
